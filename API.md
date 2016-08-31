@@ -19,7 +19,7 @@ Headers
 
 Example
 =======
-`curl -XGET '/'`
+`curl -XGET 'localhost:8000/'`
 
 Returns
 
@@ -53,7 +53,7 @@ Headers
 
 Example
 =======
-`curl -XPOST -H "Content-type: application/json" -d '{"username" : "myname", "password" : "somepassword", "author" : true}' '/register'`
+`curl -XPOST -H "Content-type: application/json" -d '{"username" : "myname", "password" : "somepassword", "author" : true}' 'localhost:8000/register'`
 
 Returns
 
@@ -82,7 +82,7 @@ Headers
 
 Example
 =======
-`curl -XPOST -H "Content-type: application/json" -d '{"username" : "myname", "password" : "somepassword"}' '/login'`
+`curl -XPOST -H "Content-type: application/json" -d '{"username" : "myname", "password" : "somepassword"}' 'localhost:8000/login'`
 
 Returns
 
@@ -108,11 +108,11 @@ Parameters
 
 Headers
 =======
-`Authorization: Bearer: *YOURTOKEN*`
+`Authorization: Bearer *YOURTOKEN*`
 
 Example
 =======
-`curl -XPOST -H 'Authorization: Bearer: *YOURTOKEN*' -H "Content-type: application/json" -d '{"title" : "2001",  "body" : "SOMEBODY ONCE TOLD ME"}' '/blog/new'`
+`curl -XPOST -H 'Authorization: Bearer *YOURTOKEN*' -H "Content-type: application/json" -d '{"title" : "2001",  "body" : "SOMEBODY ONCE TOLD ME"}' 'localhost:8000/blog/new'`
 
 Returns
 
@@ -141,7 +141,7 @@ Headers
 
 Example
 =======
-`curl -XGET '/post/1'`
+`curl -XGET 'localhost:8000/post/1'`
 
 Returns
 
@@ -171,11 +171,11 @@ Parameters
 
 Headers
 =======
-`Authorization: Bearer: *YOURTOKEN*`
+`Authorization: Bearer *YOURTOKEN*`
 
 Example
 =======
-`curl -XPOST -H 'Authorization: Bearer: *YOURTOKEN*' -H "Content-type: application/json" -d '{"body" : "SOMEBODY ONCE TOLD ME"}' '/comment/1'`
+`curl -XPOST -H 'Authorization: Bearer *YOURTOKEN*' -H "Content-type: application/json" -d '{"body" : "SOMEBODY ONCE TOLD ME"}' 'localhost:8000/comment/1'`
 
 Returns
 
