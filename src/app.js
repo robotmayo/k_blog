@@ -1,27 +1,30 @@
 'use strict';
+require('dotenv').config({ path : require('path').join(__dirname, '../.env') });
 const express = require('express');
 const bodyParser = require('body-parser');
-const session = require('express-session');
+const jwt = require('express-jwt');
 
-const App = express();
-App.use(bodyParser.json());
-App.use(session({
-  secret : 'DJ KHALED',
-  cookie : {
-    path : '/',
-    httpOnly : true,
-    secure : false,
-    maxAge : 30 * 24 * 60 * 60 * 1000 // 30 Days
-  },
-  store : require('./auth').store,
-  saveUninitialized : false,
-  resave : false
-}));
+const SECRET = require('./auth').SECRET;
+const authMW = jwt({secret : SECRET});
 
-App.get('/', (req, res) => {
-  req.session.name = 'DERP';
-  console.log('WE HERE');
-  res.json({hi : 'hi'})
-})
+function init(){
+  const App = express();
+  App.use(bodyParser.json());
 
-App.listen(8000);
+  App.use(require('./routes')(express.Router(), authMW));
+  App.use(function(err, req, res, next){
+    if(err.name === 'UnauthorizedError'){
+      res.status(401);
+      res.json({error : 'Unauthorized'});
+      return;
+    }
+    next();
+  });
+  return App;
+}
+module.exports = init;
+
+if(require.main === module){
+  init().listen(process.env.KBLOG_PORT || 8000);
+  console.log(`Listening on : ${process.env.KBLOG_PORT || 8000}`)
+}

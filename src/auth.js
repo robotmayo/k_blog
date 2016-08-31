@@ -1,58 +1,87 @@
 'use strict';
 const EE = require('events');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-const store = new EE();
-const DB = require('./db');
-const query = require('./query').bind(null, DB);
+const SECRET = 'DJ KHALED';
+const err = require('./err');
+const model = require('./model');
 
 
-store.destroy = function storeDestroy(sid, callback){
-    query('DELETE FROM sessions WHERE session_id = ?', sid)
-    .then(callback.bind(null, null))
-    .catch(callback);
+/**
+ * validateUserInfo
+ *  
+ * @param  {string} username 
+ * @param  {string} password 
+ * @return {Promise<undefined | Error>}          description 
+ */ 
+function validateUserInfo(username, password) {
+  if (!username) return Promise.reject(err(new Error('missing username'), true, 400));
+  if (!password) return Promise.reject(err(new Error('missing password'), true, 400));
+  if (username.length > 30) return Promise.reject(err(new Error('username too long'), true, 400));
+  if (password.trim() === '') return Promise.reject(err(new Error('invalid password'), true, 400));
+  return Promise.resolve();
 }
+module.exports.validateUserInfo = validateUserInfo;
 
-store.get = function storeGet(sid, callback){
-  query('SELECT * FROM sessions WHERE session_id = ?', sid)
-  .then(r => callback(null, {userID : r.user_id}))
-  .catch(callback);
-}
 
-store.set = function storeSet(sid, session, callback){
-  query('INSERT INTO sessions SET user_id = ? , session_id = ?', [session.userID, sid])
-  .then(callback.bind(null, null))
-  .catch(callback);
-}
-
-module.exports.store = store;
-
-// Assumes that the username and password is validated, all it does is hash and
-// store
-function addUser(username, password, author){
+/**
+ * addUser - Adds a user also salting and hashing their password before saving
+ *  
+ * @param  {string} username description 
+ * @param  {string} password description 
+ * @param  {boolean} author   description 
+ * @return {Promise<AuthJWT|Error>}          description 
+ */ 
+function addUser(username, password, author) {
   const hash = bcrypt.hashSync(password, 8);
-  return query(
-    'INSERT INTO users SET username = ?, password = ?, author = ?',
-    [username, hash, author]
-  )
-  .then(results => results.insertId); // TODO: Handle non inserts
+  return model.addUser(username, hash, author)
+    .then(id => getJWT({
+      id,
+      username,
+      author
+    }))
 }
 module.exports.addUser = addUser;
 
-function validateUser(username, password){
-  return query(
-    `SELECT id, username, password, author 
-    FROM kblog_users WHERE username = ?`,
-    username
-  )
-  .then(userData => {
-    const validPass = bcrypt.compareSync(password, userData.password);
-    if(!validPass) return Promise.reject(new Error('INVALID_PASSWORD'));
-    return {username : userData.username, author : userData.author, id : userData.id};
-  });
+
+/**
+ * getJWT - Basic auth JWT
+ *  
+ * @param  {object} userData
+ * @param  {string} userData.username
+ * @param  {number} userData.id
+ * @param  {boolean} userData.author
+ * @return {string}  Encoded JWT
+ */ 
+function getJWT(userData) {
+  return jwt.sign({
+    id: userData.id,
+    username: userData.username,
+    author: userData.author
+  }, SECRET);
 }
-module.exports = validateUser;
+module.exports.getJWT = getJWT;
 
 
-
-
+/**
+ * login - description
+ *  
+ * @param  {string} username
+ * @param  {string} password Expects this to be the unhashsed password 
+ * @return {Promise<AuthJWT | Error}  
+ */ 
+function login(username, password) {
+  return model.getUserByUsername(username)
+    .then(userData => {
+      const validPass = bcrypt.compareSync(password, userData.password);
+      if (!validPass) return Promise.reject(err(new Error('invalid password'), true, 400));
+      return getJWT({
+        username: userData.username,
+        author: userData.author,
+        id: userData.id
+      });
+    });
+}
+module.exports.login = login;
+module.exports.SECRET = SECRET;
